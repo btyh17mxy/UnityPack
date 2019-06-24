@@ -1,6 +1,6 @@
-import logging
 from collections import OrderedDict
 from io import BytesIO
+
 from . import engine as UnityEngine
 from .resources import UnityClass
 from .type import TypeMetadata, TypeTree
@@ -33,8 +33,10 @@ class ObjectInfo:
 					typename = script.resolve()["m_ClassName"]
 				except NotImplementedError:
 					typename = script.type.type[5:-1]  # Capture type name in PPtr<...>
-			else:
+			elif self.type_id in self.asset.tree.type_trees:
 				typename = self.asset.tree.type_trees[self.type_id].type
+			else:
+				typename = str(self.type_id)
 			self.asset.typenames[self.type_id] = typename
 		return self.asset.typenames[self.type_id]
 
@@ -108,6 +110,9 @@ class ObjectInfo:
 		elif t == "float":
 			buf.align()
 			result = buf.read_float()
+		elif t == "double":
+			buf.align()
+			result = buf.read_double()
 		elif t == "string":
 			size = buf.read_uint()
 			result = buf.read_string(size)

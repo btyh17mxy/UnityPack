@@ -1,4 +1,6 @@
+import logging
 from enum import IntEnum
+
 from .object import Object, field
 
 
@@ -18,6 +20,9 @@ class TextureFormat(IntEnum):
 
 	RGBA4444 = 13
 	BGRA32 = 14
+
+	BC6H = 24
+	BC7 = 25
 
 	DXT1Crunched = 28
 	DXT5Crunched = 29
@@ -98,6 +103,7 @@ IMPLEMENTED_FORMATS = (
 	TextureFormat.ETC2_RGB,
 	TextureFormat.ETC2_RGBA1,
 	TextureFormat.ETC2_RGBA8,
+	TextureFormat.BC7,
 )
 
 
@@ -120,7 +126,10 @@ class Material(Object):
 	def saved_properties(self):
 		def _unpack_prop(value):
 			for vk, vv in value:
-				yield vk["name"], vv
+				if isinstance(vk, str):  # Unity 5.6+
+					yield vk, vv
+				else:  # Unity <= 5.4
+					yield vk["name"], vv
 		return {k: dict(_unpack_prop(v)) for k, v in self._obj["m_SavedProperties"].items()}
 
 
@@ -172,6 +181,9 @@ class Texture2D(Texture):
 		elif self.format in (TextureFormat.ETC_RGB4, TextureFormat.ETC2_RGB, TextureFormat.ETC2_RGBA1, TextureFormat.ETC2_RGBA8):
 			codec = "etc2"
 			args = (self.format, self.format.pixel_format, )
+		elif self.format == TextureFormat.BC7:
+			codec = "bcn"
+			args = (7, )
 		else:
 			codec = "raw"
 			args = (self.format.pixel_format, )
